@@ -11,10 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Pin compatible protobuf version for MediaPipe stability
-RUN pip install --no-cache-dir "protobuf<4.0" opencv-python-headless==4.8.1.78
+# Pin numpy<2.0 for OpenCV C-binary compatibility
+RUN pip install --no-cache-dir "numpy<2.0" "protobuf<4.0" opencv-python-headless==4.8.1.78
 RUN pip install --no-cache-dir --no-deps mediapipe==0.10.9
-RUN pip install --no-cache-dir flask gunicorn boto3 scipy numpy attrs flatbuffers absl-py pillow
+RUN pip install --no-cache-dir flask gunicorn boto3 scipy attrs flatbuffers absl-py pillow
 
 COPY . .
 
