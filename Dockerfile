@@ -11,11 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Add /app/src to PYTHONPATH so Python finds utils and detection submodules
 ENV PYTHONPATH=/app/src:/app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir "numpy<2.0" "protobuf<4.0" opencv-python-headless==4.8.1.78
+# Install dependencies including matplotlib required by mediapipe drawing_utils
+RUN pip install --no-cache-dir "numpy<2.0" "protobuf<4.0" opencv-python-headless==4.8.1.78 matplotlib
 RUN pip install --no-cache-dir --no-deps mediapipe==0.10.9
 RUN pip install --no-cache-dir flask gunicorn boto3 attrs flatbuffers absl-py pillow
 
