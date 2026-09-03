@@ -11,10 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install lightweight dependencies directly without heavy extra packages (no matplotlib, no opencv-contrib, no sounddevice)
-RUN pip install --no-cache-dir opencv-python-headless==4.8.1.78
+# Pin compatible protobuf version for MediaPipe stability
+RUN pip install --no-cache-dir "protobuf<4.0" opencv-python-headless==4.8.1.78
 RUN pip install --no-cache-dir --no-deps mediapipe==0.10.9
-RUN pip install --no-cache-dir flask gunicorn boto3 scipy numpy protobuf attrs flatbuffers absl-py pillow
+RUN pip install --no-cache-dir flask gunicorn boto3 scipy numpy attrs flatbuffers absl-py pillow
 
 COPY . .
 
