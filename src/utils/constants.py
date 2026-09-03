@@ -1,0 +1,17 @@
+# Eye landmark indices
+
+LEFT_EYE = [33, 160, 158, 133, 153, 144]
+
+RIGHT_EYE = [362, 385, 387, 263, 373, 380]
+
+# Drowsiness settings
+
+LEFT_EYE = [33, 160, 158, 133, 153, 144]
+
+RIGHT_EYE = [362, 385, 387, 263, 373, 380]
+
+EAR_THRESHOLD = 0.20
+
+CLOSED_EYES_FRAMES = 20
+
+BLINK_THRESHOLD = 0.20
