@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# System dependencies for OpenCV & MediaPipe
+# Minimal system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
+# Install lightweight dependencies directly without heavy extra packages (no matplotlib, no opencv-contrib, no sounddevice)
+RUN pip install --no-cache-dir opencv-python-headless==4.8.1.78
+RUN pip install --no-cache-dir --no-deps mediapipe==0.10.9
+RUN pip install --no-cache-dir flask gunicorn boto3 scipy numpy protobuf attrs flatbuffers absl-py pillow
 
 COPY . .
 
