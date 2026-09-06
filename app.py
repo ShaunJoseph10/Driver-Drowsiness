@@ -92,13 +92,15 @@ def process_frame():
                 mar = calculate_mar(face_landmarks.landmark, w, h)
                 state["head_direction"] = get_head_pose(face_landmarks, w, h)
 
-                # --- 1. BLINK DETECTION ---
-                if avg_ear < BLINK_THRESHOLD:
-                    state["blink_detected"] = True
+                # --- 1. EYE CLOSURE, BLINK & DROWSINESS LOGIC ---
+                if avg_ear < EAR_THRESHOLD:
+                    state["frame_counter"] += 1
                 else:
-                    if state["blink_detected"]:
+                    # If eyes were closed for short duration (1 to 4 frames), count as a normal BLINK
+                    if 1 <= state["frame_counter"] < CLOSED_EYES_FRAMES:
                         state["blink_count"] += 1
-                        state["blink_detected"] = False
+                    state["frame_counter"] = 0
+                    state["status"] = "ACTIVE & ALERT"
 
                 # --- 2. YAWN DETECTION ---
                 if mar > MAR_THRESHOLD:
@@ -117,13 +119,7 @@ def process_frame():
                         state["logs"].append({"timestamp": timestamp, "ear": round(avg_ear, 3), "event": "Yawn Detected"})
                     state["yawn_frames"] = 0
 
-                # --- 3. DROWSINESS DETECTION ---
-                if avg_ear < EAR_THRESHOLD:
-                    state["frame_counter"] += 1
-                else:
-                    state["frame_counter"] = 0
-                    state["status"] = "ACTIVE & ALERT"
-
+                # --- 3. DROWSINESS ALERT (5+ consecutive frames of closed eyes) ---
                 if state["frame_counter"] >= CLOSED_EYES_FRAMES:
                     drowsy_alert = True
                     state["status"] = "DROWSY DETECTED!"

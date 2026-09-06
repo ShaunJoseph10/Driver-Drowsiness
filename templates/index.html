@@ -111,20 +111,98 @@
         const logTableBody = document.getElementById('logTableBody');
         const alarmSound = document.getElementById('alarmSound');
 
-        navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+        // Web Audio API fallback alarm synthesizer
+        let audioCtx = null;
+        let isAudioUnlocked = false;
+
+        function unlockAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            isAudioUnlocked = true;
+        }
+
+        document.addEventListener('click', unlockAudio, { once: true });
+        document.addEventListener('touchstart', unlockAudio, { once: true });
+
+        function playAlarmSound() {
+            // Try standard audio element first
+            alarmSound.currentTime = 0;
+            const playPromise = alarmSound.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    // Fallback to Web Audio API synthesizer
+                    if (audioCtx) {
+                        try {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 880Hz A5 pitch
+                            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 0.4);
+                        } catch (e) {
+                            console.error("Audio synth error:", e);
+                        }
+                    }
+                });
+            }
+        }
+
+        // Initialize Webcam
+        function initCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    alertBanner.innerText = "⚠️ HTTPS REQUIRED: Please use https://" + window.location.hostname + " to allow camera access";
+                } else {
+                    alertBanner.innerText = "⚠️ CAMERA NOT SUPPORTED BY THIS BROWSER";
+                }
+                alertBanner.className = "alert-banner status-danger";
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 640 }, 
+                    height: { ideal: 480 }, 
+                    facingMode: "user" 
+                } 
+            })
             .then(stream => {
                 video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    setInterval(captureAndSend, 120);
-                };
+                video.play().then(() => {
+                    alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
+                    alertBanner.className = "alert-banner status-normal";
+                    setInterval(captureAndSend, 150);
+                }).catch(err => {
+                    console.warn("Video play interrupted, retrying:", err);
+                    alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
+                    alertBanner.className = "alert-banner status-normal";
+                    setInterval(captureAndSend, 150);
+                });
             })
             .catch(err => {
-                alertBanner.innerText = "⚠️ CAMERA PERMISSION DENIED IN BROWSER";
+                console.error("Camera Error:", err);
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    alertBanner.innerText = "⚠️ CAMERA PERMISSION DENIED - Click camera icon in browser address bar to Allow";
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    alertBanner.innerText = "⚠️ NO WEBCAM DETECTED - Please connect a camera";
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    alertBanner.innerText = "⚠️ CAMERA IN USE BY ANOTHER APP - Please close other camera apps";
+                } else {
+                    alertBanner.innerText = "⚠️ CAMERA ERROR: " + err.message;
+                }
                 alertBanner.className = "alert-banner status-danger";
             });
+        }
 
         function captureAndSend() {
-            if (!video.videoWidth) return;
+            if (!video.videoWidth || !video.videoHeight) return;
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -137,18 +215,21 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.error) return;
+                if (data.error) {
+                    console.error("Server processing error:", data.error);
+                    return;
+                }
 
                 earVal.innerText = data.ear !== undefined ? data.ear.toFixed(2) : "0.00";
                 marVal.innerText = data.mar !== undefined ? data.mar.toFixed(2) : "0.00";
-                blinkVal.innerText = data.blinks || "0";
-                yawnVal.innerText = data.yawns || "0";
+                blinkVal.innerText = data.blinks !== undefined ? data.blinks : "0";
+                yawnVal.innerText = data.yawns !== undefined ? data.yawns : "0";
                 poseVal.innerText = data.head_pose || "CENTER";
 
                 if (data.drowsy_alert) {
                     alertBanner.innerText = "🚨 DROWSINESS ALERT! WAKE UP DRIVER! 🚨";
                     alertBanner.className = "alert-banner status-danger";
-                    alarmSound.play().catch(() => {});
+                    playAlarmSound();
                 } else {
                     alertBanner.innerText = "STATUS: " + (data.status || "ACTIVE & ALERT");
                     alertBanner.className = "alert-banner status-normal";
@@ -164,8 +245,11 @@
                     `).join('');
                 }
             })
-            .catch(err => console.error("Error processing frame:", err));
+            .catch(err => console.error("Error sending frame:", err));
         }
+
+        // Start initialization on page load
+        window.addEventListener('DOMContentLoaded', initCamera);
     </script>
 </body>
 </html>
