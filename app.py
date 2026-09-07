@@ -59,6 +59,17 @@ if not os.path.exists(log_file):
 def index():
     return render_template("index.html")
 
+@app.route("/reset", methods=["POST"])
+def reset_stats():
+    state["blink_count"] = 0
+    state["yawn_count"] = 0
+    state["frame_counter"] = 0
+    state["yawn_frames"] = 0
+    state["status"] = "ACTIVE & ALERT"
+    state["head_direction"] = "CENTER"
+    state["logs"] = []
+    return jsonify({"status": "success", "message": "Stats reset successfully"})
+
 @app.route("/process_frame", methods=["POST"])
 def process_frame():
     try:

@@ -38,6 +38,8 @@
         th { color: #94a3b8; font-weight: 600; }
         .event-drowsy { color: #ef4444; font-weight: bold; }
         .event-yawn { color: #f59e0b; font-weight: bold; }
+        .btn-reset { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; border: 1px solid #60a5fa; padding: 8px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); margin-top: 8px; }
+        .btn-reset:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5); background: linear-gradient(135deg, #60a5fa, #2563eb); }
     </style>
 </head>
 <body>
@@ -45,6 +47,7 @@
         <header>
             <h1>Driver Drowsiness Detection System</h1>
             <p>Real-Time Fatigue, Yawn & Head Pose AI Platform</p>
+            <button id="resetBtn" class="btn-reset" onclick="resetStats()">🔄 Reset Session Counters</button>
         </header>
 
         <div id="alertBanner" class="alert-banner status-normal">SYSTEM INITIALIZING... ALLOW CAMERA ACCESS</div>
@@ -246,6 +249,22 @@
                 }
             })
             .catch(err => console.error("Error sending frame:", err));
+        }
+
+        function resetStats() {
+            fetch('/reset', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    blinkVal.innerText = "0";
+                    yawnVal.innerText = "0";
+                    earVal.innerText = "0.00";
+                    marVal.innerText = "0.00";
+                    poseVal.innerText = "CENTER";
+                    logTableBody.innerHTML = '<tr><td colspan="3" style="color: #64748b; text-align: center;">No fatigue events logged yet.</td></tr>';
+                    alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
+                    alertBanner.className = "alert-banner status-normal";
+                })
+                .catch(err => console.error("Error resetting stats:", err));
         }
 
         // Start initialization on page load
