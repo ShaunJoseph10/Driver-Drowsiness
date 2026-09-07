@@ -26,10 +26,10 @@ face_mesh = mp_face_mesh.FaceMesh(
 )
 
 EAR_THRESHOLD = 0.23      # Eye aspect ratio cutoff for closed eyes
-CLOSED_EYES_FRAMES = 5   # 5 frames (~0.5s) of closed eyes triggers DROWSINESS ALERT!
+CLOSED_EYES_FRAMES = 15  # 15 frames (~1.5s - 2.0s) of closed eyes triggers DROWSINESS ALERT!
 
 MAR_THRESHOLD = 0.40     # Yawn mouth aspect ratio cutoff
-YAWN_FRAMES = 4          # 4 frames (~0.3s) of open mouth triggers YAWN COUNT!
+YAWN_FRAMES = 4          # 4 frames (~0.4s) of open mouth triggers YAWN COUNT!
 
 # Global Session State
 state = {
