@@ -157,6 +157,8 @@
             }
         }
 
+        let isProcessingFrame = false;
+
         // Initialize Webcam
         function initCamera() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -181,12 +183,12 @@
                 video.play().then(() => {
                     alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
                     alertBanner.className = "alert-banner status-normal";
-                    setInterval(captureAndSend, 150);
+                    setInterval(captureAndSend, 80);
                 }).catch(err => {
                     console.warn("Video play interrupted, retrying:", err);
                     alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
                     alertBanner.className = "alert-banner status-normal";
-                    setInterval(captureAndSend, 150);
+                    setInterval(captureAndSend, 80);
                 });
             })
             .catch(err => {
@@ -205,11 +207,14 @@
         }
 
         function captureAndSend() {
-            if (!video.videoWidth || !video.videoHeight) return;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            if (isProcessingFrame || !video.videoWidth || !video.videoHeight) return;
+            isProcessingFrame = true;
+
+            // Downscale frame to 380x280 for ultra-fast processing & low payload size
+            canvas.width = 380;
+            canvas.height = 280;
+            ctx.drawImage(video, 0, 0, 380, 280);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.45);
 
             fetch('/process_frame', {
                 method: 'POST',
@@ -248,7 +253,10 @@
                     `).join('');
                 }
             })
-            .catch(err => console.error("Error sending frame:", err));
+            .catch(err => console.error("Error sending frame:", err))
+            .finally(() => {
+                isProcessingFrame = false;
+            });
         }
 
         function resetStats() {

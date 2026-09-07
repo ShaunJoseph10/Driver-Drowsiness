@@ -16,11 +16,13 @@ from src.utils.s3_uploader import upload_file_to_s3
 
 app = Flask(__name__)
 
-# Initialize MediaPipe Face Mesh
+# Initialize MediaPipe Face Mesh optimized for real-time video stream
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
     max_num_faces=1,
-    refine_landmarks=True
+    refine_landmarks=False,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5
 )
 
 EAR_THRESHOLD = 0.20
