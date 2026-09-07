@@ -1,19 +1,12 @@
-import cv2
-import numpy as np
-
+import math
 
 def get_head_pose(face_landmarks, frame_w, frame_h):
-
     landmarks = face_landmarks.landmark
 
     nose = landmarks[1]
     chin = landmarks[152]
-
     left_eye = landmarks[33]
     right_eye = landmarks[263]
-
-    left_mouth = landmarks[61]
-    right_mouth = landmarks[291]
 
     nose_x = nose.x * frame_w
     nose_y = nose.y * frame_h
@@ -26,33 +19,39 @@ def get_head_pose(face_landmarks, frame_w, frame_h):
 
     chin_y = chin.y * frame_h
 
-    face_center_x = (left_x + right_x) / 2
-    horizontal_offset = nose_x - face_center_x
+    # Scale reference: distance between eyes
+    eye_dist = math.hypot(right_x - left_x, right_y - left_y)
+    if eye_dist == 0:
+        return "CENTER"
 
-    eye_center_y = (left_y + right_y) / 2
-    vertical_offset = nose_y - eye_center_y
+    # Horizontal yaw offset (normalized by eye distance)
+    face_center_x = (left_x + right_x) / 2.0
+    norm_yaw = (nose_x - face_center_x) / eye_dist
 
-    eye_slope = right_y - left_y
+    # Vertical pitch ratio: distance(nose, eyes) / distance(chin, nose)
+    eye_center_y = (left_y + right_y) / 2.0
+    nose_eye_dist = nose_y - eye_center_y
+    chin_nose_dist = chin_y - nose_y
 
-    # LEFT / RIGHT
-    if horizontal_offset > 25:
+    # 1. YAW (LEFT / RIGHT from user perspective)
+    if norm_yaw > 0.14:
+        return "LEFT"
+    if norm_yaw < -0.14:
         return "RIGHT"
 
-    if horizontal_offset < -25:
-        return "LEFT"
+    # 2. PITCH (UP / DOWN)
+    if chin_nose_dist > 0:
+        pitch_ratio = nose_eye_dist / chin_nose_dist
+        if pitch_ratio > 1.05:
+            return "DOWN"
+        if pitch_ratio < 0.42:
+            return "UP"
 
-    # UP / DOWN
-    if vertical_offset > 80:
-        return "DOWN"
-
-    if vertical_offset < 40:
-        return "UP"
-
-    # TILT
-    if eye_slope > 15:
+    # 3. ROLL (TILT LEFT / TILT RIGHT)
+    eye_slope = (right_y - left_y) / eye_dist
+    if eye_slope > 0.22:
         return "TILT RIGHT"
-
-    if eye_slope < -15:
+    if eye_slope < -0.22:
         return "TILT LEFT"
 
     return "CENTER"

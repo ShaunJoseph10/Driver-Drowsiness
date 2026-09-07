@@ -25,12 +25,12 @@ face_mesh = mp_face_mesh.FaceMesh(
     min_tracking_confidence=0.5
 )
 
-EAR_THRESHOLD = 0.20
-BLINK_THRESHOLD = 0.20
-CLOSED_EYES_FRAMES = 5  # ~0.8s eyes closed in web stream
+EAR_THRESHOLD = 0.23
+BLINK_THRESHOLD = 0.23
+CLOSED_EYES_FRAMES = 4  # ~0.4s eyes closed in web stream triggers Drowsiness alert
 
-MAR_THRESHOLD = 0.40
-YAWN_FRAMES = 4        # ~0.6s open mouth in web stream
+MAR_THRESHOLD = 0.45
+YAWN_FRAMES = 2        # ~0.2s mouth open triggers Yawn count
 
 # Global Session State
 state = {
