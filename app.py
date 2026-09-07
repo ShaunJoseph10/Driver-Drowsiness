@@ -25,11 +25,11 @@ face_mesh = mp_face_mesh.FaceMesh(
     min_tracking_confidence=0.5
 )
 
-EAR_THRESHOLD = 0.22
-CLOSED_EYES_FRAMES = 3  # 3 consecutive closed eye frames triggers Drowsiness alert
+EAR_THRESHOLD = 0.25      # Sensitive threshold to capture fast light blinks instantly
+CLOSED_EYES_FRAMES = 2   # 2 consecutive closed eye frames (~0.15s) triggers Drowsiness alert
 
-MAR_THRESHOLD = 0.40
-YAWN_FRAMES = 2        # 2 consecutive open mouth frames triggers Yawn count
+MAR_THRESHOLD = 0.38     # Calibrated yawn threshold
+YAWN_FRAMES = 1          # 1 frame wide open mouth triggers Yawn count instantly
 
 # Global Session State
 state = {
