@@ -26,7 +26,8 @@ face_mesh = mp_face_mesh.FaceMesh(
 )
 
 EAR_THRESHOLD = 0.23      # Standard eye aspect ratio cutoff for closed eyes
-CLOSED_EYES_FRAMES = 10  # 10 frames (~1.0 second) of closed eyes triggers DROWSINESS ALERT!
+BLINK_FRAMES = 2           # Approx. 0.2 seconds (assuming ~10 FPS) for a blink
+DROWSY_FRAMES = 20          # Approx. 2 seconds of closed eyes triggers drowsiness alert
 
 MAR_THRESHOLD = 0.40     # Yawn mouth aspect ratio cutoff
 YAWN_FRAMES = 3          # 3 frames (~0.3 second) of open mouth triggers YAWN COUNT!
@@ -107,7 +108,8 @@ def process_frame():
                 # --- 1. EYE CLOSURE, BLINK & DROWSINESS LOGIC ---
                 if avg_ear < EAR_THRESHOLD:
                     state["frame_counter"] += 1
-                    if state["frame_counter"] >= CLOSED_EYES_FRAMES:
+                    # Drowsiness detection: if eyes closed for DROWSY_FRAMES or more
+                    if state["frame_counter"] >= DROWSY_FRAMES:
                         drowsy_alert = True
                         state["status"] = "DROWSY DETECTED!"
                         current_time = time.time()
@@ -130,8 +132,9 @@ def process_frame():
                             state["logs"].append({"timestamp": timestamp, "ear": round(avg_ear, 3), "event": "Drowsiness Detected"})
                             state["last_log_time"] = current_time
                 else:
-                    # Eyes are open. If eyes were closed for short duration (1 to 2 frames), count as a BLINK
-                    if 1 <= state["frame_counter"] < CLOSED_EYES_FRAMES:
+                    # Eyes are open now. Check what happened during the closed period.
+                    if 1 <= state["frame_counter"] < DROWSY_FRAMES:
+                        # Short closure = blink
                         state["blink_count"] += 1
                     state["frame_counter"] = 0
                     if not (mar > MAR_THRESHOLD and state["yawn_frames"] >= YAWN_FRAMES):
