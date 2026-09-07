@@ -183,12 +183,12 @@
                 video.play().then(() => {
                     alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
                     alertBanner.className = "alert-banner status-normal";
-                    setInterval(captureAndSend, 80);
+                    setInterval(captureAndSend, 50);
                 }).catch(err => {
                     console.warn("Video play interrupted, retrying:", err);
                     alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
                     alertBanner.className = "alert-banner status-normal";
-                    setInterval(captureAndSend, 80);
+                    setInterval(captureAndSend, 50);
                 });
             })
             .catch(err => {
@@ -210,11 +210,11 @@
             if (isProcessingFrame || !video.videoWidth || !video.videoHeight) return;
             isProcessingFrame = true;
 
-            // Scale frame to 500x375 for high precision MediaPipe tracking & fast network transmission
-            canvas.width = 500;
-            canvas.height = 375;
-            ctx.drawImage(video, 0, 0, 500, 375);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.70);
+            // Fast 400x300 canvas capture for 20 FPS real-time streaming
+            canvas.width = 400;
+            canvas.height = 300;
+            ctx.drawImage(video, 0, 0, 400, 300);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.55);
 
             fetch('/process_frame', {
                 method: 'POST',
