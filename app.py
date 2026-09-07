@@ -16,20 +16,20 @@ from src.utils.s3_uploader import upload_file_to_s3
 
 app = Flask(__name__)
 
-# Initialize MediaPipe Face Mesh
+# Initialize MediaPipe Face Mesh optimized for maximum CPU speed
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
     max_num_faces=1,
-    refine_landmarks=True,
+    refine_landmarks=False,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5
 )
 
-EAR_THRESHOLD = 0.23      # Eye aspect ratio cutoff for closed eyes
-CLOSED_EYES_FRAMES = 15  # 15 frames (~1.5s - 2.0s) of closed eyes triggers DROWSINESS ALERT!
+EAR_THRESHOLD = 0.23      # Standard eye aspect ratio cutoff for closed eyes
+CLOSED_EYES_FRAMES = 10  # 10 frames (~1.0 second) of closed eyes triggers DROWSINESS ALERT!
 
 MAR_THRESHOLD = 0.40     # Yawn mouth aspect ratio cutoff
-YAWN_FRAMES = 4          # 4 frames (~0.4s) of open mouth triggers YAWN COUNT!
+YAWN_FRAMES = 3          # 3 frames (~0.3 second) of open mouth triggers YAWN COUNT!
 
 # Global Session State
 state = {

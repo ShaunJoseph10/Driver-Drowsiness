@@ -183,12 +183,12 @@
                 video.play().then(() => {
                     alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
                     alertBanner.className = "alert-banner status-normal";
-                    setInterval(captureAndSend, 50);
+                    sendNextFrame();
                 }).catch(err => {
                     console.warn("Video play interrupted, retrying:", err);
                     alertBanner.innerText = "STATUS: ACTIVE & MONITORING";
                     alertBanner.className = "alert-banner status-normal";
-                    setInterval(captureAndSend, 50);
+                    sendNextFrame();
                 });
             })
             .catch(err => {
@@ -206,15 +206,20 @@
             });
         }
 
-        function captureAndSend() {
-            if (isProcessingFrame || !video.videoWidth || !video.videoHeight) return;
-            isProcessingFrame = true;
+        let isFrameInFlight = false;
 
-            // Fast 400x300 canvas capture for 20 FPS real-time streaming
-            canvas.width = 400;
-            canvas.height = 300;
-            ctx.drawImage(video, 0, 0, 400, 300);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.55);
+        function sendNextFrame() {
+            if (isFrameInFlight || !video.videoWidth || !video.videoHeight) {
+                setTimeout(sendNextFrame, 40);
+                return;
+            }
+            isFrameInFlight = true;
+
+            // Compact 320x240 capture for zero-latency instant transmission
+            canvas.width = 320;
+            canvas.height = 240;
+            ctx.drawImage(video, 0, 0, 320, 240);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.45);
 
             fetch('/process_frame', {
                 method: 'POST',
@@ -239,7 +244,7 @@
                     alertBanner.className = "alert-banner status-danger";
                     playAlarmSound();
                 } else {
-                    alertBanner.innerText = "STATUS: " + (data.status || "ACTIVE & ALERT");
+                    alertBanner.innerText = "STATUS: " + (data.status || "ACTIVE & MONITORING");
                     alertBanner.className = "alert-banner status-normal";
                 }
 
@@ -255,7 +260,8 @@
             })
             .catch(err => console.error("Error sending frame:", err))
             .finally(() => {
-                isProcessingFrame = false;
+                isFrameInFlight = false;
+                setTimeout(sendNextFrame, 30);
             });
         }
 
