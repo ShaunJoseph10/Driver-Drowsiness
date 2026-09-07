@@ -25,11 +25,10 @@ face_mesh = mp_face_mesh.FaceMesh(
     min_tracking_confidence=0.5
 )
 
-EAR_THRESHOLD = 0.23
-BLINK_THRESHOLD = 0.23
-CLOSED_EYES_FRAMES = 4  # ~0.4s eyes closed in web stream triggers Drowsiness alert
+EAR_THRESHOLD = 0.25
+CLOSED_EYES_FRAMES = 3  # ~0.3s eyes closed triggers Drowsiness alert
 
-MAR_THRESHOLD = 0.45
+MAR_THRESHOLD = 0.35
 YAWN_FRAMES = 2        # ~0.2s mouth open triggers Yawn count
 
 # Global Session State
@@ -108,18 +107,40 @@ def process_frame():
                 # --- 1. EYE CLOSURE, BLINK & DROWSINESS LOGIC ---
                 if avg_ear < EAR_THRESHOLD:
                     state["frame_counter"] += 1
+                    if state["frame_counter"] >= CLOSED_EYES_FRAMES:
+                        drowsy_alert = True
+                        state["status"] = "DROWSY DETECTED!"
+                        current_time = time.time()
+
+                        # Save Screenshot & Upload to AWS S3 every 5s during alert
+                        if current_time - state["last_capture_time"] > 5:
+                            timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                            filename = f"drowsy_{timestamp_str}.jpg"
+                            filepath = os.path.join(screenshots_dir, filename)
+                            cv2.imwrite(filepath, frame)
+                            upload_file_to_s3(filepath, f"screenshots/{filename}")
+                            state["last_capture_time"] = current_time
+
+                        # Log Drowsiness Event to CSV & AWS S3
+                        if current_time - state["last_log_time"] > 5:
+                            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            with open(log_file, mode="a", newline="") as f:
+                                csv.writer(f).writerow([timestamp, round(avg_ear, 3), "Drowsiness Detected"])
+                            upload_file_to_s3(log_file, "logs/drowsiness_log.csv")
+                            state["logs"].append({"timestamp": timestamp, "ear": round(avg_ear, 3), "event": "Drowsiness Detected"})
+                            state["last_log_time"] = current_time
                 else:
-                    # If eyes were closed for short duration (1 to 4 frames), count as a normal BLINK
+                    # Eyes are open. If eyes were closed for short duration (1 to 2 frames), count as a BLINK
                     if 1 <= state["frame_counter"] < CLOSED_EYES_FRAMES:
                         state["blink_count"] += 1
                     state["frame_counter"] = 0
-                    state["status"] = "ACTIVE & ALERT"
+                    if not (mar > MAR_THRESHOLD and state["yawn_frames"] >= YAWN_FRAMES):
+                        state["status"] = "ACTIVE & ALERT"
 
                 # --- 2. YAWN DETECTION ---
                 if mar > MAR_THRESHOLD:
                     state["yawn_frames"] += 1
-                else:
-                    if state["yawn_frames"] >= YAWN_FRAMES:
+                    if state["yawn_frames"] == YAWN_FRAMES:
                         state["yawn_count"] += 1
                         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         
@@ -130,31 +151,11 @@ def process_frame():
                         # Sync Log to AWS S3
                         upload_file_to_s3(log_file, "logs/drowsiness_log.csv")
                         state["logs"].append({"timestamp": timestamp, "ear": round(avg_ear, 3), "event": "Yawn Detected"})
+                    
+                    if state["yawn_frames"] >= YAWN_FRAMES:
+                        state["status"] = "YAWN DETECTED!"
+                else:
                     state["yawn_frames"] = 0
-
-                # --- 3. DROWSINESS ALERT (5+ consecutive frames of closed eyes) ---
-                if state["frame_counter"] >= CLOSED_EYES_FRAMES:
-                    drowsy_alert = True
-                    state["status"] = "DROWSY DETECTED!"
-                    current_time = time.time()
-
-                    # Save Screenshot & Upload to AWS S3 every 5s during alert
-                    if current_time - state["last_capture_time"] > 5:
-                        timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                        filename = f"drowsy_{timestamp_str}.jpg"
-                        filepath = os.path.join(screenshots_dir, filename)
-                        cv2.imwrite(filepath, frame)
-                        upload_file_to_s3(filepath, f"screenshots/{filename}")
-                        state["last_capture_time"] = current_time
-
-                    # Log Drowsiness Event to CSV & AWS S3
-                    if current_time - state["last_log_time"] > 5:
-                        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        with open(log_file, mode="a", newline="") as f:
-                            csv.writer(f).writerow([timestamp, round(avg_ear, 3), "Drowsiness Detected"])
-                        upload_file_to_s3(log_file, "logs/drowsiness_log.csv")
-                        state["logs"].append({"timestamp": timestamp, "ear": round(avg_ear, 3), "event": "Drowsiness Detected"})
-                        state["last_log_time"] = current_time
 
         return jsonify({
             "status": state["status"],
