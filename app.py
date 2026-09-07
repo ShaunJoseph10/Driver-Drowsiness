@@ -27,7 +27,7 @@ face_mesh = mp_face_mesh.FaceMesh(
 
 EAR_THRESHOLD = 0.23      # Standard eye aspect ratio cutoff for closed eyes
 BLINK_FRAMES = 2           # Approx. 0.2 seconds (assuming ~10 FPS) for a blink
-DROWSY_FRAMES = 20          # Approx. 2 seconds of closed eyes triggers drowsiness alert
+DROWSY_FRAMES = 5          # ~2 seconds at real network FPS (~2-3 FPS) triggers drowsiness alert
 
 MAR_THRESHOLD = 0.40     # Yawn mouth aspect ratio cutoff
 YAWN_FRAMES = 3          # 3 frames (~0.3 second) of open mouth triggers YAWN COUNT!
