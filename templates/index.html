@@ -210,11 +210,11 @@
             if (isProcessingFrame || !video.videoWidth || !video.videoHeight) return;
             isProcessingFrame = true;
 
-            // Downscale frame to 380x280 for ultra-fast processing & low payload size
-            canvas.width = 380;
-            canvas.height = 280;
-            ctx.drawImage(video, 0, 0, 380, 280);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.45);
+            // Scale frame to 500x375 for high precision MediaPipe tracking & fast network transmission
+            canvas.width = 500;
+            canvas.height = 375;
+            ctx.drawImage(video, 0, 0, 500, 375);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.70);
 
             fetch('/process_frame', {
                 method: 'POST',

@@ -16,20 +16,20 @@ from src.utils.s3_uploader import upload_file_to_s3
 
 app = Flask(__name__)
 
-# Initialize MediaPipe Face Mesh optimized for real-time video stream
+# Initialize MediaPipe Face Mesh
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
     max_num_faces=1,
-    refine_landmarks=False,
+    refine_landmarks=True,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5
 )
 
-EAR_THRESHOLD = 0.25
-CLOSED_EYES_FRAMES = 3  # ~0.3s eyes closed triggers Drowsiness alert
+EAR_THRESHOLD = 0.22
+CLOSED_EYES_FRAMES = 3  # 3 consecutive closed eye frames triggers Drowsiness alert
 
-MAR_THRESHOLD = 0.35
-YAWN_FRAMES = 2        # ~0.2s mouth open triggers Yawn count
+MAR_THRESHOLD = 0.40
+YAWN_FRAMES = 2        # 2 consecutive open mouth frames triggers Yawn count
 
 # Global Session State
 state = {
